@@ -1,0 +1,40 @@
+﻿<Page
+    x:Class="eTapeViewer.MainPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:eTapeViewer"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d">
+
+    <Grid Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+        <FlyoutBase.AttachedFlyout>
+            <MenuFlyout/>
+        </FlyoutBase.AttachedFlyout>
+        <Button x:Name="buttonScan" Content="Scan" HorizontalAlignment="Left" Margin="10,10,0,0" VerticalAlignment="Top" Height="64" Width="128" Click="buttonScan_Click"/>
+        <ListView x:Name="listViewDevices" Margin="10,79,10,0" SelectionChanged="listViewDevices_SelectionChanged" Height="160" VerticalAlignment="Top">
+            <ListView.ItemTemplate>
+
+                <DataTemplate>
+                    <TextBlock Text="{Binding Name}"></TextBlock>
+                </DataTemplate>
+
+            </ListView.ItemTemplate>
+        </ListView>
+        <ListView x:Name="listViewValues" Margin="10,244,10,10">
+            <FlyoutBase.AttachedFlyout>
+                <MenuFlyout/>
+            </FlyoutBase.AttachedFlyout>
+            <ListView.Transitions>
+                <TransitionCollection>
+                    <!--<AddDeleteThemeTransition/>
+                        <ContentThemeTransition/>
+                        <ReorderThemeTransition/>
+                        <EntranceThemeTransition IsStaggeringEnabled="True"/>-->
+                </TransitionCollection>
+            </ListView.Transitions>
+        </ListView>
+        <Button x:Name="buttonClear" Content="Clear received" HorizontalAlignment="Right" Margin="0,10,10,0" VerticalAlignment="Top" Height="64" Width="128" Click="buttonClear_Click"/>
+
+    </Grid>
+</Page>
