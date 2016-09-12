@@ -5,26 +5,44 @@
     xmlns:local="using:eTapeViewer"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-    mc:Ignorable="d">
+    mc:Ignorable="d" Loaded="Page_Loaded">
+    <Page.BottomAppBar>
+        <CommandBar>
+            <CommandBar.SecondaryCommands>
+                <AppBarButton x:Name="sendButton" Icon="Send" Label="Share" IsEnabled="False" Click="buttonShare_Click"/>
+                <AppBarButton Icon="Delete" Label="Clear received" Click="buttonClear_Click"/>
+            </CommandBar.SecondaryCommands>
+            <CommandBar.Content>
+                <Grid/>
+            </CommandBar.Content>
+            <AppBarButton Icon="Link" Label="Connect/Disconnect tape" Click="buttonScan_Click"/>
+            <AppBarToggleButton x:Name="beepSwitch" Icon="Volume" IsChecked="True" Label="Beep on values" Checked="toggleButtonBeep_Checked" Unchecked="toggleButtonBeep_Unchecked" />
+        </CommandBar>
+    </Page.BottomAppBar>
 
     <Grid Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
         <FlyoutBase.AttachedFlyout>
             <MenuFlyout/>
         </FlyoutBase.AttachedFlyout>
-        <Button x:Name="buttonScan" Content="Scan" HorizontalAlignment="Left" Margin="10,10,0,0" VerticalAlignment="Top" Height="64" Width="128" Click="buttonScan_Click"/>
-        <ListView x:Name="listViewDevices" Margin="10,79,10,0" SelectionChanged="listViewDevices_SelectionChanged" Height="160" VerticalAlignment="Top">
-            <ListView.ItemTemplate>
-
-                <DataTemplate>
-                    <TextBlock Text="{Binding Name}"></TextBlock>
-                </DataTemplate>
-
-            </ListView.ItemTemplate>
-        </ListView>
-        <ListView x:Name="listViewValues" Margin="10,244,10,10">
+        <ListView x:Name="listViewValues" Margin="10">
+            <ListView.Resources>
+                <MenuFlyout x:Key="FlyoutItem">
+                    <MenuFlyoutItem Text="Copy" Click="CopyItem_Click"/>
+                    <MenuFlyoutItem Text="Copy value" Click="CopyValueItem_Click"/>
+                    <MenuFlyoutSeparator/>
+                    <MenuFlyoutItem Text="Comments" Click="AddCommentsItem_Click"/>
+                    <MenuFlyoutSeparator/>
+                    <MenuFlyoutItem Text="Delete" Click="DeleteItem_Click"/>
+                </MenuFlyout>
+            </ListView.Resources>
             <FlyoutBase.AttachedFlyout>
-                <MenuFlyout/>
+                <StaticResource ResourceKey="FlyoutItem"/>
             </FlyoutBase.AttachedFlyout>
+            <ListView.ItemTemplate>
+                <DataTemplate>
+                    <TextBlock Text="{Binding Output}" FlyoutBase.AttachedFlyout="{StaticResource FlyoutItem}" RightTapped="listViewItemValues_RightTapped" />
+                </DataTemplate>
+            </ListView.ItemTemplate>
             <ListView.Transitions>
                 <TransitionCollection>
                     <!--<AddDeleteThemeTransition/>
@@ -34,7 +52,5 @@
                 </TransitionCollection>
             </ListView.Transitions>
         </ListView>
-        <Button x:Name="buttonClear" Content="Clear received" HorizontalAlignment="Right" Margin="0,10,10,0" VerticalAlignment="Top" Height="64" Width="128" Click="buttonClear_Click"/>
-
     </Grid>
 </Page>
