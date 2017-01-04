@@ -4,6 +4,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Text;
 using System.Threading.Tasks;
 using Windows.ApplicationModel.Core;
 using Windows.ApplicationModel.DataTransfer;
@@ -34,8 +35,35 @@ namespace eTapeViewer
             _receivedValues = new ObservableCollection<MeasuredValue>();
             listViewValues.ItemsSource = _receivedValues;
 
+            DataTransferManager.GetForCurrentView().DataRequested += MainPage_DataRequested;
+
             // Do not sleep
             new Windows.System.Display.DisplayRequest().RequestActive();
+        }
+
+        private void MainPage_DataRequested(DataTransferManager sender, DataRequestedEventArgs args)
+        {
+            if (_receivedValues.Count>0)
+            {
+                //var s = new StringBuilder("<style type=\"text/css\"> table.tableizer-table { font-size: 12px; border: 1px solid #CCC; font-family: Arial, Helvetica, sans-serif; } .tableizer-table td { padding: 4px; margin: 3px; border: 1px solid #CCC; } .tableizer-table th { background-color: #104E8B; color: #FFF; font-weight: bold; } </style> <table class=\"tableizer-table\"><thead><tr class=\"tableizer-firstrow\"><th>Value</th><th>Units</th><th>Comments</th></tr></thead><tbody>");
+                var s = new StringBuilder("Value,Unit,Comments" + Environment.NewLine);
+
+                foreach (var v in _receivedValues)
+                {
+                    //s.AppendLine($"<tr><td>{v.Millimeters}</td><td>mm</td><td>{v.Comments}</td></tr>");
+                    s.AppendLine($"{v.Millimeters},mm,{v.Comments}");
+                }
+                //s.Append("</tbody></table>");
+                //var htmlFormat = HtmlFormatHelper.CreateHtmlFormat(s.ToString());
+                //args.Request.Data.SetHtmlFormat(htmlFormat);
+                //args.Request.Data.SetRtf(rtf)
+                args.Request.Data.SetText(s.ToString());
+                args.Request.Data.Properties.Title = "Capture - "+ Windows.ApplicationModel.Package.Current.DisplayName;
+            }
+            else
+            {
+                args.Request.FailWithDisplayText("Nothing to share");
+            }
         }
 
         private void buttonScan_Click(object sender, RoutedEventArgs e)
@@ -68,11 +96,11 @@ namespace eTapeViewer
                     if (s2.Uuid.ToString().StartsWith("23455102-"))
                         if (s2.CharacteristicProperties.HasFlag(GattCharacteristicProperties.Notify))
                         {
-                            if (_currentDevice != s2)
+                            if (_currentDevice == null || _currentDevice.Uuid != s2.Uuid)
                             {
                                 _currentDevice = s2;
-                                s2.ValueChanged += S_ValueChanged;
-                                break;
+                                _currentDevice.ValueChanged += S_ValueChanged;
+                                //break;
                             }
                         }
             }
@@ -90,8 +118,16 @@ namespace eTapeViewer
             var bytes = new byte[b.UnconsumedBufferLength];
             b.ReadBytes(bytes);
 
-            _receivedValues.Add(new MeasuredValue(ConvertToMillimeters(bytes)));
-            sendButton.IsEnabled = true;
+            CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(CoreDispatcherPriority.Normal,
+                () =>
+                {
+                    _receivedValues.Add(new MeasuredValue(ConvertToMillimeters(bytes)));
+                    sendButton.IsEnabled = true;
+
+                    if((bool) beepSwitch.IsChecked)
+                        _beep?.Play();
+                }
+            );
         }
 
         private static double ConvertToMillimeters(byte[] bytes)
@@ -103,8 +139,9 @@ namespace eTapeViewer
         private void buttonClear_Click(object sender, RoutedEventArgs e)
         {
             _receivedValues.Clear();
-            _receivedValues.Add(new MeasuredValue(10));
-            _receivedValues.Add(new MeasuredValue(20) { Comments = "hello"});
+            /*_receivedValues.Add(new MeasuredValue(10.2));
+            _receivedValues.Add(new MeasuredValue(11.7));
+            _receivedValues.Add(new MeasuredValue(20.1) { Comments = "hello"});*/
             sendButton.IsEnabled = _receivedValues.Count > 0;
         }
 
@@ -185,7 +222,7 @@ namespace eTapeViewer
 
         private void buttonShare_Click(object sender, RoutedEventArgs e)
         {
-            throw new NotImplementedException();
+            DataTransferManager.ShowShareUI();
         }
     }
 
