@@ -1,10 +1,10 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Package xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10" xmlns:mp="http://schemas.microsoft.com/appx/2014/phone/manifest" xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10" IgnorableNamespaces="uap mp">
-  <Identity Name="78c4f18e-6f67-4f34-8123-11c6121d25d3" Publisher="CN=Erwin" Version="1.0.0.0" />
+  <Identity Name="53439ErwinRied.eTapeViewer" Publisher="CN=6B6EEC3D-DCA8-4585-A14E-58133B7BE509" Version="1.1.0.0" />
   <mp:PhoneIdentity PhoneProductId="78c4f18e-6f67-4f34-8123-11c6121d25d3" PhonePublisherId="00000000-0000-0000-0000-000000000000" />
   <Properties>
     <DisplayName>eTapeViewer</DisplayName>
-    <PublisherDisplayName>Erwin</PublisherDisplayName>
+    <PublisherDisplayName>Erwin Ried</PublisherDisplayName>
     <Logo>Assets\StoreLogo.png</Logo>
   </Properties>
   <Dependencies>
@@ -15,7 +15,7 @@
   </Resources>
   <Applications>
     <Application Id="App" Executable="$targetnametoken$.exe" EntryPoint="eTapeViewer.App">
-      <uap:VisualElements DisplayName="eTapeViewer" Square150x150Logo="Assets\Square150x150Logo.png" Square44x44Logo="Assets\Square44x44Logo.png" Description="eTapeViewer" BackgroundColor="transparent">
+      <uap:VisualElements DisplayName="eTapeViewer" Square150x150Logo="Assets\Square150x150Logo.png" Square44x44Logo="Assets\Square44x44Logo.png" Description="Third party app to get the measurements from the eTape16 Bluetooth digital tape BLE device" BackgroundColor="transparent">
         <uap:DefaultTile Wide310x150Logo="Assets\Wide310x150Logo.png" ShortName="eTapeViewer">
         </uap:DefaultTile>
         <uap:SplashScreen Image="Assets\SplashScreen.png" />
