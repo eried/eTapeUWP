@@ -10,6 +10,7 @@ using Windows.ApplicationModel.Core;
 using Windows.ApplicationModel.DataTransfer;
 using Windows.Devices.Bluetooth.GenericAttributeProfile;
 using Windows.Devices.Enumeration;
+using Windows.Foundation;
 using Windows.Media.Core;
 using Windows.Storage.Streams;
 using Windows.UI.Core;
@@ -27,6 +28,7 @@ namespace eTapeViewer
         private GattCharacteristic _currentDevice;
         private MediaElement _beep;
         private ObservableCollection<MeasuredValue> _receivedValues;
+        private MeasuredValue _clickedItem;
 
         public MainPage()
         {
@@ -39,6 +41,14 @@ namespace eTapeViewer
 
             // Do not sleep
             new Windows.System.Display.DisplayRequest().RequestActive();
+
+            if (Debugger.IsAttached)
+            {
+                // Test values
+                _receivedValues.Add(new MeasuredValue(10.2));
+                _receivedValues.Add(new MeasuredValue(11.7));
+                _receivedValues.Add(new MeasuredValue(20.1) { Comments = "hello" });
+            }
         }
 
         private void MainPage_DataRequested(DataTransferManager sender, DataRequestedEventArgs args)
@@ -73,6 +83,8 @@ namespace eTapeViewer
 
         private async void ScanForDevices()
         {
+            buttonConnect.Icon = new SymbolIcon(Symbol.ZeroBars);
+
             foreach(var d in await GetBluetoothDevices())
                 if (d.Name == "eTape")
                 {
@@ -96,12 +108,13 @@ namespace eTapeViewer
                     if (s2.Uuid.ToString().StartsWith("23455102-"))
                         if (s2.CharacteristicProperties.HasFlag(GattCharacteristicProperties.Notify))
                         {
+                            buttonConnect.Icon = new SymbolIcon(Symbol.FourBars);
                             if (_currentDevice == null || _currentDevice.Uuid != s2.Uuid)
                             {
                                 _currentDevice = s2;
                                 _currentDevice.ValueChanged += S_ValueChanged;
-                                //break;
                             }
+                            break;
                         }
             }
         }
@@ -123,8 +136,9 @@ namespace eTapeViewer
                 {
                     _receivedValues.Add(new MeasuredValue(ConvertToMillimeters(bytes)));
                     sendButton.IsEnabled = true;
+                    clearButton.IsEnabled = true;
 
-                    if((bool) beepSwitch.IsChecked)
+                    if ((bool) beepSwitch.IsChecked)
                         _beep?.Play();
                 }
             );
@@ -139,10 +153,9 @@ namespace eTapeViewer
         private void buttonClear_Click(object sender, RoutedEventArgs e)
         {
             _receivedValues.Clear();
-            /*_receivedValues.Add(new MeasuredValue(10.2));
-            _receivedValues.Add(new MeasuredValue(11.7));
-            _receivedValues.Add(new MeasuredValue(20.1) { Comments = "hello"});*/
-            sendButton.IsEnabled = _receivedValues.Count > 0;
+
+            clearButton.IsEnabled = false;
+            sendButton.IsEnabled = false;
         }
 
         private void Page_Loaded(object sender, RoutedEventArgs e)
@@ -157,11 +170,6 @@ namespace eTapeViewer
         {
             _beep?.Play();
             beepSwitch.Icon = new SymbolIcon(Symbol.Volume);
-        }
-
-        private void listViewItemValues_RightTapped(object sender, RightTappedRoutedEventArgs e)
-        {
-            FlyoutBase.ShowAttachedFlyout(sender as FrameworkElement);
         }
 
         private async void AddCommentsItem_Click(object sender, RoutedEventArgs e)
@@ -192,7 +200,7 @@ namespace eTapeViewer
             CopyToClipboard(GetMeasuredValue(e),false);
         }
 
-        private static MeasuredValue GetMeasuredValue(RoutedEventArgs e)
+        private MeasuredValue GetMeasuredValue(RoutedEventArgs e)
         {
             return (MeasuredValue)((MenuFlyoutItem)e.OriginalSource).DataContext;
         }
@@ -213,6 +221,7 @@ namespace eTapeViewer
         {
             _receivedValues.Remove(GetMeasuredValue(e));
             sendButton.IsEnabled = _receivedValues.Count > 0;
+            clearButton.IsEnabled = sendButton.IsEnabled;
         }
 
         private void toggleButtonBeep_Unchecked(object sender, RoutedEventArgs e)
@@ -223,6 +232,27 @@ namespace eTapeViewer
         private void buttonShare_Click(object sender, RoutedEventArgs e)
         {
             DataTransferManager.ShowShareUI();
+        }
+
+        private void listViewValues_ItemClick(object sender, ItemClickEventArgs e)
+        {
+            _clickedItem = (MeasuredValue) e.ClickedItem;
+        }
+
+        private void listViewValues_Tapped(object sender, TappedRoutedEventArgs e)
+        {
+            ShowFlyout(e.OriginalSource as FrameworkElement, e.GetPosition(e.OriginalSource as UIElement));
+        }
+
+        private void listViewValues_RightTapped(object sender, RightTappedRoutedEventArgs e)
+        {
+            ShowFlyout(e.OriginalSource as FrameworkElement, e.GetPosition(e.OriginalSource as UIElement));
+        }
+
+        private void ShowFlyout(FrameworkElement f, Point p)
+        {
+            if (f?.DataContext != null)
+                flyout.ShowAt(f,p);
         }
     }
 
