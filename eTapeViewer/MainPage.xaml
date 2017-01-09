@@ -9,33 +9,39 @@
     <Page.BottomAppBar>
         <CommandBar>
             <CommandBar.SecondaryCommands>
-                <AppBarButton x:Name="sendButton" Icon="Send" Label="Share" IsEnabled="False" Click="buttonShare_Click"/>
-                <AppBarButton x:Name="clearButton" Icon="Delete" Label="Clear received" IsEnabled="False" Click="buttonClear_Click"/>
+                <AppBarButton x:Name="sendButton" Icon="Send" Label="Share" IsEnabled="False" Click="buttonShare_Click" />
+                <AppBarButton x:Name="clearButton" Icon="Delete" Label="Clear received" IsEnabled="False"
+                              Click="buttonClear_Click" />
+                <AppBarSeparator/>
+                <AppBarButton Icon="Find" Label="Device information" Click="DeviceInfoButton_Click"/>
             </CommandBar.SecondaryCommands>
             <CommandBar.Content>
-                <Grid/>
+                <Grid />
             </CommandBar.Content>
-            <AppBarButton x:Name="buttonConnect" Label="Connect" Click="buttonScan_Click"/>
-            <AppBarToggleButton x:Name="beepSwitch" Icon="Volume" IsChecked="True" Label="Beep" Checked="toggleButtonBeep_Checked" Unchecked="toggleButtonBeep_Unchecked" />
+            <AppBarButton x:Name="buttonConnect" Label="Connect" Click="buttonScan_Click" />
+            <AppBarToggleButton x:Name="beepSwitch" Icon="Volume" IsChecked="True" Label="Beep"
+                                Checked="toggleButtonBeep_Checked" Unchecked="toggleButtonBeep_Unchecked" />
         </CommandBar>
     </Page.BottomAppBar>
 
     <Grid Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
         <FlyoutBase.AttachedFlyout>
-            <MenuFlyout/>
+            <MenuFlyout />
         </FlyoutBase.AttachedFlyout>
-        <ListView x:Name="listViewValues" Margin="10" ItemClick="listViewValues_ItemClick" IsItemClickEnabled="True" SelectionMode="None" IsSynchronizedWithCurrentItem="False" Tapped="listViewValues_Tapped" RightTapped="listViewValues_RightTapped">
+        <ListView x:Name="listViewValues" Margin="10" SelectionMode="None" IsSynchronizedWithCurrentItem="False"
+                  RightTapped="listViewValues_RightTapped" IsItemClickEnabled="True" ItemClick="listViewValues_ItemClick" Holding="listViewValues_Holding">
             <ListView.Resources>
                 <MenuFlyout x:Name="flyout" x:Key="FlyoutItem">
-                    <MenuFlyoutItem Text="Comments" Click="AddCommentsItem_Click"/>
-                    <MenuFlyoutItem Text="Copy" Click="CopyItem_Click"/>
-                    <MenuFlyoutItem Text="Copy value" Click="CopyValueItem_Click"/>
-                    <MenuFlyoutSeparator/>
-                    <MenuFlyoutItem Text="Delete" Click="DeleteItem_Click"/>
+                    <MenuFlyoutItem Text="Comments" Click="AddCommentsItem_Click" />
+                    <MenuFlyoutSeparator />
+                    <MenuFlyoutItem Text="Copy" Click="CopyItem_Click" />
+                    <MenuFlyoutItem Text="Copy value" Click="CopyValueItem_Click" />
+                    <MenuFlyoutSeparator />
+                    <MenuFlyoutItem Text="Delete" Click="DeleteItem_Click" />
                 </MenuFlyout>
             </ListView.Resources>
             <FlyoutBase.AttachedFlyout>
-                <StaticResource ResourceKey="FlyoutItem"/>
+                <StaticResource ResourceKey="FlyoutItem" />
             </FlyoutBase.AttachedFlyout>
             <ListView.ItemTemplate>
                 <DataTemplate>
