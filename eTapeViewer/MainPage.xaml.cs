@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
@@ -20,6 +21,7 @@ using Windows.UI.Core;
 using Windows.UI.Popups;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
+using Windows.UI.Xaml.Data;
 using Windows.UI.Xaml.Input;
 using eTapeViewer.Annotations;
 
@@ -28,7 +30,6 @@ namespace eTapeViewer
     public sealed partial class MainPage
     {
         private MediaElement _beep;
-        private MeasuredValue _clickedItem;
         private GattCharacteristic _currentDevice;
         private readonly ObservableCollection<MeasuredValue> _receivedValues;
         private string _currentConfiguration;
@@ -56,6 +57,7 @@ namespace eTapeViewer
 
             // Do not sleep
             new DisplayRequest().RequestActive();
+            UpdateGui();
         }
 
         private void Flyout_Opening(object sender, object e)
@@ -95,10 +97,13 @@ namespace eTapeViewer
 
         private async void ScanForDevices()
         {
+            _currentConfiguration = "";
+
             await CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(CoreDispatcherPriority.Normal,
                 () =>
                 {
-                    buttonConnect.Icon = new SymbolIcon(Symbol.ZeroBars);
+                    //buttonConnect.Icon = new SymbolIcon(Symbol.ZeroBars);
+                    buttonConnectIcon.Glyph = "";
                 });
 
             foreach (var d in await GetBluetoothDevices())
@@ -137,13 +142,17 @@ namespace eTapeViewer
                             b.ReadBytes(bytes);
 
                             var bits = new BitArray(bytes);
-                            _currentConfiguration = "Device configuration\n" +
-                                                    $"Battery low: {bits[15]}\n" +
-                                                    $"Inside measurement: {bits[14]}\n" +
-                                                    $"Offset measurement: {bits[13]}\n" +
-                                                    $"Centerline: {bits[12]}\n" +
-                                                    $"Display units: {(bits[2] ? "Metric" : (bits[0] && bits[1] ? "Decimal feet" : (bits[1] ? "Decimal inches" : (bits[0] ? "Fractional inches" : "Feet and inches"))))}\n\n"+
-                                                    "This information will be updated when connecting to the tape. The application uses Metric and ignores all the other settings.";
+
+                            if (_currentConfiguration.Length > 0)
+                                _currentConfiguration += "\n";
+
+                            _currentConfiguration += "eTape16 Bluetooth\n" +
+                                                    $"  Battery low: {bits[15]}\n" +
+                                                    $"  Inside measurement: {bits[14]}\n" +
+                                                    $"  Offset measurement: {bits[13]}\n" +
+                                                    $"  Centerline: {bits[12]}\n" +
+                                                    $"  Display units: {(bits[2] ? "Metric" : (bits[0] && bits[1] ? "Decimal feet" : (bits[1] ? "Decimal inches" : (bits[0] ? "Fractional inches" : "Feet and inches"))))}\n\n"+
+                                                    "The application uses Metric and ignores all the other settings from this tape. The information displayed was received when connecting to the tape and it might not be updated.";
                         }
 
                         if (c.StartsWith("23455102-"))
@@ -175,9 +184,7 @@ namespace eTapeViewer
 
         private static async Task<DeviceInformationCollection> GetBluetoothDevices()
         {
-            return
-                await
-                    DeviceInformation.FindAllAsync(
+            return await DeviceInformation.FindAllAsync(
                         GattDeviceService.GetDeviceSelectorFromUuid(GattServiceUuids.DeviceInformation), null);
         }
 
@@ -195,8 +202,7 @@ namespace eTapeViewer
                     _receivedValues.Add(m);
                     listViewValues.ScrollIntoView(m);
 
-                    sendButton.IsEnabled = true;
-                    clearButton.IsEnabled = true;
+                    UpdateGui();
 
                     if ((bool) beepSwitch.IsChecked)
                         _beep?.Play();
@@ -214,15 +220,15 @@ namespace eTapeViewer
         {
             var d = new MessageDialog("Delete all measurements?");
             var yes = new UICommand("Yes");
+
+            d.DefaultCommandIndex = 1;
             d.Commands.Add(yes);
             d.Commands.Add(new UICommand("No"));
 
             if (await d.ShowAsync() == yes)
             {
                 _receivedValues.Clear();
-
-                clearButton.IsEnabled = false;
-                sendButton.IsEnabled = false;
+                UpdateGui();
             }
         }
 
@@ -290,8 +296,17 @@ namespace eTapeViewer
         private void DeleteItem_Click(object sender, RoutedEventArgs e)
         {
             _receivedValues.Remove(GetMeasuredValue(e));
-            sendButton.IsEnabled = _receivedValues.Count > 0;
-            clearButton.IsEnabled = sendButton.IsEnabled;
+            UpdateGui();
+        }
+
+        private void UpdateGui()
+        {
+            var e = _receivedValues.Count > 0;
+            sendButton.IsEnabled = e;
+            clearButton.IsEnabled = e;
+            sendButton2.IsEnabled = e;
+            copyButton.IsEnabled = e;
+            copyButton2.IsEnabled = e;
         }
 
         private void toggleButtonBeep_Unchecked(object sender, RoutedEventArgs e)
@@ -302,6 +317,39 @@ namespace eTapeViewer
         private void buttonShare_Click(object sender, RoutedEventArgs e)
         {
             DataTransferManager.ShowShareUI();
+        }
+
+        private async void buttonCopy_Click(object sender, RoutedEventArgs e)
+        {
+            var d = new ContentDialog { Title = "Copy measurements"};
+            var panel = new StackPanel();
+
+            panel.Children.Add(new TextBlock {Text = "Select format:"});
+            panel.Children.Add(new RadioButton { Content = "Millimeters",Name = "mm", IsChecked = true });
+            panel.Children.Add(new RadioButton { Content = "Millimeters (only values)" });
+            panel.Children.Add(new RadioButton { Content = "Centimeters" });
+            panel.Children.Add(new RadioButton { Content = "Centimeters (only values)" });
+            d.Content = panel;
+
+            d.PrimaryButtonText = "Copy";
+            d.SecondaryButtonText = "Cancel";
+
+            if (await d.ShowAsync() == ContentDialogResult.Primary)
+            {
+                // Generate and copy
+                var s = new StringBuilder();
+
+                var useMM = ((RadioButton) panel.Children[1]).IsChecked==true || ((RadioButton) panel.Children[2]).IsChecked==true;
+                var appendComments = ((RadioButton)panel.Children[1]).IsChecked == true || ((RadioButton)panel.Children[3]).IsChecked == true;
+
+                foreach (var v in _receivedValues)
+                    s.AppendLine($"{(useMM ? Math.Round(v.Millimeters,2):Math.Round(v.Millimeters/10,1))}{(appendComments&&!string.IsNullOrEmpty(v.Comments)?" ("+v.Comments+")": "")}");
+                
+                var da = new DataPackage();
+                da.SetText(s.ToString());
+
+                Clipboard.SetContent(da);
+            }
         }
 
         private void listViewValues_RightTapped(object sender, RightTappedRoutedEventArgs e)
@@ -320,12 +368,6 @@ namespace eTapeViewer
                 flyout.ShowAt(f, p);
         }
 
-        private async void DeviceInfoButton_Click(object sender, RoutedEventArgs e)
-        {
-            var dialog = new MessageDialog(string.IsNullOrEmpty(_currentConfiguration)?"No information available.":_currentConfiguration);
-            await dialog.ShowAsync();
-        }
-
         private void listViewValues_ItemClick(object sender, ItemClickEventArgs e)
         {
             AddCommentsItem_Click(sender, e);
@@ -338,6 +380,70 @@ namespace eTapeViewer
             {
                 ShowFlyout(e.OriginalSource as FrameworkElement, e.GetPosition(e.OriginalSource as UIElement));
                 Debug.WriteLine("HOLDING FLYOUT");
+            }
+        }
+
+        #region "Information options"
+        private void DeviceInfoButton_Click(object sender, RoutedEventArgs e)
+        {
+            //ScanForDevices();
+            ShowMessageBox(string.IsNullOrEmpty(_currentConfiguration) ? "No tape connected." : _currentConfiguration);
+        }
+
+        private static async void ShowMessageBox(string s)
+        {
+            var dialog = new MessageDialog(s);
+            await dialog.ShowAsync();
+        }
+
+        private void InstructionsButton_Click(object sender, RoutedEventArgs e)
+        {
+            ShowMessageBox("To use your tape with this application:\n\n" +
+                           "1) Turn on Bluetooth from System settings\n"+
+                "2) Pair the tape you want to use\n"+
+                "3) Use the tape functionality to send measurements\n\n" +
+                "Tap each measurement to add or edit comments for the entry. Right click or tap and hold to get more options.\n\n"+
+                "If you aren't receiving measurements, unpair and pair the tape again. Bluetooth icon should appear steady on in the Tape. If you can't still make it work, remove the batteries from the tape for few seconds and then try again.");
+        }
+
+        private void AboutButton_Click(object sender, RoutedEventArgs e)
+        {
+            ShowMessageBox("Programmed by Erwin Ried\nerwin@ried.cl\n\nDesigned to work with the Measure Inc. eTape16 Bluetooth Digital Tape.\n\nNot endorsed or supported in any form by the manufacturer.");
+        }
+
+        #endregion
+
+        private async void AddManualButton_Click(object sender, RoutedEventArgs e)
+        {
+            var dialog = new ContentDialog { Title = "New entry" };
+            var panel = new StackPanel();
+
+            var scope = new InputScope();
+            var scopeName = new InputScopeName {NameValue = InputScopeNameValue.Number};
+            scope.Names.Add(scopeName);
+
+            panel.Children.Add(new TextBox
+            {
+                MaxLength = 5,
+                PlaceholderText = "Value in milimeters",
+                //Text = v.Comments ?? "",
+                InputScope = scope,
+            });
+
+            dialog.Content = panel;
+
+            dialog.PrimaryButtonText = "Add";
+            dialog.SecondaryButtonText = "Cancel";
+
+            if (await dialog.ShowAsync() == ContentDialogResult.Primary)
+            {
+                var t = ((TextBox) ((StackPanel) dialog.Content).Children[0]).Text;
+                var mm = 0;
+
+                if (int.TryParse(t, out mm))
+                    _receivedValues.Add(new MeasuredValue(mm));
+                else
+                    ShowMessageBox("Invalid input");
             }
         }
     }
@@ -379,6 +485,23 @@ namespace eTapeViewer
         protected virtual void OnPropertyChanged([CallerMemberName] string propertyName = null)
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        }
+    }
+
+    public class InvertBooleanConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, string language)
+        {
+            if (!(value is bool))
+                throw new ArgumentException("Value must be a boolean");
+            return !((bool)value);
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, string language)
+        {
+            if (!(value is bool))
+                throw new ArgumentException("Value must be a boolean");
+            return !((bool)value);
         }
     }
 }

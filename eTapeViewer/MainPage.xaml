@@ -7,20 +7,40 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d" Loaded="Page_Loaded">
     <Page.BottomAppBar>
-        <CommandBar>
+        <CommandBar Name="AppCommandBar">
             <CommandBar.SecondaryCommands>
-                <AppBarButton x:Name="sendButton" Icon="Send" Label="Share" IsEnabled="False" Click="buttonShare_Click" />
-                <AppBarButton x:Name="clearButton" Icon="Delete" Label="Clear received" IsEnabled="False"
-                              Click="buttonClear_Click" />
+                <AppBarButton Icon="Add" Label="Add manual entry" Click="AddManualButton_Click" />
                 <AppBarSeparator/>
-                <AppBarButton Icon="Find" Label="Device information" Click="DeviceInfoButton_Click"/>
+                <AppBarButton x:Name="sendButton" Icon="Send" Label="Share measurements" Click="buttonShare_Click" />
+                <AppBarButton x:Name="copyButton" Icon="Copy" Label="Copy measurements" Click="buttonCopy_Click" />
+                <AppBarButton x:Name="clearButton" Icon="Delete" Label="Clear received" Click="buttonClear_Click" />
+                <AppBarSeparator/>
+                <AppBarButton Icon="Find" Label="Connection information" Click="DeviceInfoButton_Click" />
+                <AppBarButton Label="Instructions" Click="InstructionsButton_Click"/>
+                <AppBarButton Icon="Help" Label="About" Click="AboutButton_Click"/>
             </CommandBar.SecondaryCommands>
+            <CommandBar.Resources>
+                <local:InvertBooleanConverter x:Key="InvertBooleanConverter" />
+            </CommandBar.Resources>
             <CommandBar.Content>
-                <Grid />
+                
+                <AppBarToggleButton x:Name="beepSwitch" Icon="Volume" IsChecked="True" Label=""
+                                Checked="toggleButtonBeep_Checked" Unchecked="toggleButtonBeep_Unchecked" 
+                                    IsCompact="{Binding IsOpen,ElementName=AppCommandBar, Converter={StaticResource InvertBooleanConverter}}"
+                                    ToolTipService.ToolTip="Enables the beep when a new measurement is received" />
+            
             </CommandBar.Content>
-            <AppBarButton x:Name="buttonConnect" Label="Connect" Click="buttonScan_Click" />
-            <AppBarToggleButton x:Name="beepSwitch" Icon="Volume" IsChecked="True" Label="Beep"
-                                Checked="toggleButtonBeep_Checked" Unchecked="toggleButtonBeep_Unchecked" />
+            <AppBarButton x:Name="buttonConnect" Visibility="Collapsed" Label="Connect" Click="buttonScan_Click" ToolTipService.ToolTip="Connects to Tape. This is done automatically but you might invoke it manually on demand">
+                <AppBarButton.Icon>
+                <FontIcon Name="buttonConnectIcon" FontFamily="Segoe MDL2 Assets" Glyph="&#xE957;"/>
+                </AppBarButton.Icon>
+            </AppBarButton>
+            <AppBarButton x:Name="sendButton2" Label="Share" Click="buttonShare_Click" ToolTipService.ToolTip="Share the received measurements">
+                <AppBarButton.Icon>
+                    <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE72D;"/>
+                </AppBarButton.Icon>
+            </AppBarButton>
+            <AppBarButton x:Name="copyButton2" Icon="Copy" Label="Copy" Click="buttonCopy_Click" ToolTipService.ToolTip="Copy the received measurements to the clipboard" />
         </CommandBar>
     </Page.BottomAppBar>
 
@@ -48,14 +68,9 @@
                     <TextBlock Text="{Binding Output}" FlyoutBase.AttachedFlyout="{StaticResource FlyoutItem}" />
                 </DataTemplate>
             </ListView.ItemTemplate>
-            <ListView.Transitions>
-                <TransitionCollection>
-                    <!--<AddDeleteThemeTransition/>
-                        <ContentThemeTransition/>
-                        <ReorderThemeTransition/>
-                        <EntranceThemeTransition IsStaggeringEnabled="True"/>-->
-                </TransitionCollection>
-            </ListView.Transitions>
+            <ListView.ItemContainerTransitions>
+                <TransitionCollection/>
+            </ListView.ItemContainerTransitions>
         </ListView>
     </Grid>
 </Page>
