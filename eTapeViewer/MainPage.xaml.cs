@@ -93,6 +93,7 @@ namespace eTapeViewer
         private void buttonScan_Click(object sender, RoutedEventArgs e)
         {
             ScanForDevices();
+            ShowMessageBox("Tape scan procedure was triggered. If there was a tape paired and available it should work now. Otherwise check the Instructions option from the menu.\n\nConnection, in most scenarios, is handled automatically but you can invoke a manual check at any time using this option.");
         }
 
         private async void ScanForDevices()
@@ -425,7 +426,7 @@ namespace eTapeViewer
             panel.Children.Add(new TextBox
             {
                 MaxLength = 5,
-                PlaceholderText = "Value in milimeters",
+                PlaceholderText = "Value in millimeters",
                 //Text = v.Comments ?? "",
                 InputScope = scope,
             });
@@ -441,7 +442,10 @@ namespace eTapeViewer
                 var mm = 0;
 
                 if (int.TryParse(t, out mm))
+                {
                     _receivedValues.Add(new MeasuredValue(mm));
+                    UpdateGui();
+                }
                 else
                     ShowMessageBox("Invalid input");
             }

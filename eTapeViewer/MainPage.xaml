@@ -10,12 +10,13 @@
         <CommandBar Name="AppCommandBar">
             <CommandBar.SecondaryCommands>
                 <AppBarButton Icon="Add" Label="Add manual entry" Click="AddManualButton_Click" />
-                <AppBarSeparator/>
-                <AppBarButton x:Name="sendButton" Icon="Send" Label="Share measurements" Click="buttonShare_Click" />
-                <AppBarButton x:Name="copyButton" Icon="Copy" Label="Copy measurements" Click="buttonCopy_Click" />
-                <AppBarButton x:Name="clearButton" Icon="Delete" Label="Clear received" Click="buttonClear_Click" />
+                <AppBarSeparator Visibility="Collapsed"/>
+                <AppBarButton x:Name="sendButton" Visibility="Collapsed" Icon="Send" Label="Share measurements" Click="buttonShare_Click" />
+                <AppBarButton x:Name="copyButton" Visibility="Collapsed" Icon="Copy" Label="Copy measurements" Click="buttonCopy_Click" />
+                <AppBarButton x:Name="clearButton" Icon="Delete" Label="Clear all" Click="buttonClear_Click" />
                 <AppBarSeparator/>
                 <AppBarButton Icon="Find" Label="Connection information" Click="DeviceInfoButton_Click" />
+                <AppBarButton Icon="Link" Label="Connect to tape" Click="buttonScan_Click" />
                 <AppBarButton Label="Instructions" Click="InstructionsButton_Click"/>
                 <AppBarButton Icon="Help" Label="About" Click="AboutButton_Click"/>
             </CommandBar.SecondaryCommands>
