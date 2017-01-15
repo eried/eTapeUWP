@@ -57,7 +57,13 @@ namespace eTapeViewer
             if (e.PrelaunchActivated == false)
             {
                 if (rootFrame.Content == null)
-                    rootFrame.Navigate(typeof(MainPage), e.Arguments);
+                {
+                    rootFrame.Navigate((RoamingSettings.GetInt(Settings.RunTimes)<= 0)
+                            ? typeof(Tutorial)
+                            : typeof(MainPage), e.Arguments);
+                    RoamingSettings.IncrementInt(Settings.RunTimes);
+                }
+
                 // Ensure the current window is active
                 Window.Current.Activate();
             }
@@ -85,6 +91,34 @@ namespace eTapeViewer
             var deferral = e.SuspendingOperation.GetDeferral();
             //TODO: Save application state and stop any background activity
             deferral.Complete();
+        }
+    }
+
+    internal enum Settings
+    {
+        RunTimes
+    }
+
+    internal static class RoamingSettings
+    {
+        public static int GetInt(Settings s)
+        {
+            var r = Windows.Storage.ApplicationData.Current.RoamingSettings.Values[s.ToString()];
+
+            if (r is int)
+                return (int)r;
+
+            return 0;
+        }
+
+        public static void IncrementInt(Settings s)
+        {
+            SetInt(s,GetInt(s) + 1);
+        }
+
+        private static void SetInt(Settings s, int i)
+        {
+            Windows.Storage.ApplicationData.Current.RoamingSettings.Values[s.ToString()] = i;
         }
     }
 }

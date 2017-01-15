@@ -237,7 +237,6 @@ namespace eTapeViewer
         {
             _beep = new MediaElement {AutoPlay = false};
             _beep.SetPlaybackSource(MediaSource.CreateFromUri(new Uri("ms-appx:///Assets/beep.mp3")));
-
             ScanForDevices();
         }
 
@@ -399,12 +398,14 @@ namespace eTapeViewer
 
         private void InstructionsButton_Click(object sender, RoutedEventArgs e)
         {
-            ShowMessageBox("To use your tape with this application:\n\n" +
+            /*ShowMessageBox("To use your tape with this application:\n\n" +
                            "1) Turn on Bluetooth from System settings\n"+
                 "2) Pair the tape you want to use\n"+
                 "3) Use the tape functionality to send measurements\n\n" +
                 "Tap each measurement to add or edit comments for the entry. Right click or tap and hold to get more options.\n\n"+
-                "If you aren't receiving measurements, unpair and pair the tape again. Bluetooth icon should appear steady on in the Tape. If you can't still make it work, remove the batteries from the tape for few seconds and then try again.");
+                "If you aren't receiving measurements, unpair and pair the tape again. Bluetooth icon should appear steady on in the Tape. If you can't still make it work, remove the batteries from the tape for few seconds and then try again.");*/
+
+            Frame.Navigate(typeof(Tutorial));          
         }
 
         private void AboutButton_Click(object sender, RoutedEventArgs e)

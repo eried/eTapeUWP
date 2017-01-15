@@ -1,0 +1,25 @@
+﻿<Page
+    x:Class="eTapeViewer.Tutorial"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:eTapeViewer"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d">
+
+    <Grid Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+        <FlipView x:Name="flipView">
+            <Grid>
+                <Image />
+                <TextBlock x:Name="textBlock" HorizontalAlignment="Left" Margin="88,522,0,0" TextWrapping="Wrap" Text="Turn on Bluetooth from Settings" VerticalAlignment="Top"/>
+            </Grid>
+            <Grid>
+                <Image />
+                <TextBlock x:Name="textBlock2" HorizontalAlignment="Left" Margin="88,522,0,0" TextWrapping="Wrap" Text="Hold the tape Bluetooth button until the tape is ready to be paired" VerticalAlignment="Top"/>
+            </Grid>
+            <Grid>
+                <Button x:Name="button" Content="Start measuring!" Margin="112,432,120,176" HorizontalAlignment="Center" Click="button_Click"/>
+            </Grid>
+        </FlipView>
+    </Grid>
+</Page>
