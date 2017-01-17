@@ -10,6 +10,8 @@ using System.Threading.Tasks;
 using Windows.ApplicationModel;
 using Windows.ApplicationModel.Core;
 using Windows.ApplicationModel.DataTransfer;
+using Windows.ApplicationModel.Store;
+using Windows.Devices.Bluetooth;
 using Windows.Devices.Bluetooth.GenericAttributeProfile;
 using Windows.Devices.Enumeration;
 using Windows.Foundation;
@@ -21,8 +23,10 @@ using Windows.UI.Core;
 using Windows.UI.Popups;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
+using Windows.UI.Xaml.Controls.Primitives;
 using Windows.UI.Xaml.Data;
 using Windows.UI.Xaml.Input;
+using Windows.UI.Xaml.Navigation;
 using eTapeViewer.Annotations;
 
 namespace eTapeViewer
@@ -31,33 +35,78 @@ namespace eTapeViewer
     {
         private MediaElement _beep;
         private GattCharacteristic _currentDevice;
-        private readonly ObservableCollection<MeasuredValue> _receivedValues;
+        public static readonly ObservableCollection<MeasuredValue> ReceivedValues = new ObservableCollection<MeasuredValue>();
         private string _currentConfiguration;
         private bool _ignoreFlyout;
 
         public MainPage()
         {
             InitializeComponent();
-
-            _receivedValues = new ObservableCollection<MeasuredValue>();
-            listViewValues.ItemsSource = _receivedValues;
+            this.NavigationCacheMode = NavigationCacheMode.Enabled;
+            listViewValues.ItemsSource = ReceivedValues;
 
             DataTransferManager.GetForCurrentView().DataRequested += MainPage_DataRequested;
 
             flyout.Closing += Flyout_Closing;
             flyout.Opening += Flyout_Opening;
 
-            if (Debugger.IsAttached)
+            // Test values
+            if (Debugger.IsAttached && ReceivedValues.Count == 0)
             {
-                // Test values
-                _receivedValues.Add(new MeasuredValue(10.2));
-                _receivedValues.Add(new MeasuredValue(11.7));
-                _receivedValues.Add(new MeasuredValue(20.1) {Comments = "hello"});
+                ReceivedValues.Add(new MeasuredValue(10.2));
+                ReceivedValues.Add(new MeasuredValue(11.7));
+                ReceivedValues.Add(new MeasuredValue(200.1) {Comments = "Table width"});
+                ReceivedValues.Add(new MeasuredValue(400.45) {Comments = "Table length"});
             }
+
+            this.Loaded += MainPage_Loaded;
 
             // Do not sleep
             new DisplayRequest().RequestActive();
             UpdateGui();
+        }
+
+        private async void MainPage_Loaded(object sender, RoutedEventArgs e)
+        {
+            if (App.FirstLaunch)
+            {
+                // Ask to rate my app
+                var launchTimes = RoamingSettings.GetInt(Settings.RunTimes);
+                if (launchTimes == 10 ||
+                    (CurrentAppSimulator.LicenseInformation.IsTrial && launchTimes > 0 && launchTimes%20 == 0))
+                {
+                    if (RoamingSettings.GetInt(Settings.RateThisApp) == 0)
+                    {
+                        var r = await AskRateThisApp();
+                        if (!r) launchTimes = Math.Max(0, launchTimes - 2); // Ask soon
+                    }
+                }
+                RoamingSettings.SetInt(Settings.RunTimes, ++launchTimes);
+                App.FirstLaunch = false;
+            }
+
+            // Sound
+            _beep = new MediaElement { AutoPlay = false };
+            _beep.SetPlaybackSource(MediaSource.CreateFromUri(new Uri("ms-appx:///Assets/beep.mp3")));
+            ScanForDevices();
+        }
+
+        private static async Task<bool> AskRateThisApp()
+        {
+            var rated = false;
+            var rateDialog = new MessageDialog("Do you want to Rate my app?");
+            rateDialog.Commands.Add(new UICommand("Yes, sure!", async (command) =>
+            {
+                await Launcher.LaunchUriAsync(
+                    new Uri($"ms-windows-store://review/?PFN={Package.Current.Id.FamilyName}"));
+                RoamingSettings.SetInt(Settings.RateThisApp, 1);
+                rated = true;
+            }));
+            rateDialog.Commands.Add(new UICommand("Not now"));
+            rateDialog.DefaultCommandIndex = 0;
+            rateDialog.CancelCommandIndex = 1;
+            await rateDialog.ShowAsync();
+            return rated;
         }
 
         private void Flyout_Opening(object sender, object e)
@@ -66,7 +115,7 @@ namespace eTapeViewer
             Debug.WriteLine("OPENING");
         }
 
-        private void Flyout_Closing(Windows.UI.Xaml.Controls.Primitives.FlyoutBase sender, Windows.UI.Xaml.Controls.Primitives.FlyoutBaseClosingEventArgs args)
+        private void Flyout_Closing(FlyoutBase sender, FlyoutBaseClosingEventArgs args)
         {
             _ignoreFlyout = false;
             Debug.WriteLine("CLOSING");
@@ -74,17 +123,13 @@ namespace eTapeViewer
 
         private void MainPage_DataRequested(DataTransferManager sender, DataRequestedEventArgs args)
         {
-            if (_receivedValues.Count > 0)
+            if (ReceivedValues.Count > 0)
             {
-                //var s = new StringBuilder("<style type=\"text/css\"> table.tableizer-table { font-size: 12px; border: 1px solid #CCC; font-family: Arial, Helvetica, sans-serif; } .tableizer-table td { padding: 4px; margin: 3px; border: 1px solid #CCC; } .tableizer-table th { background-color: #104E8B; color: #FFF; font-weight: bold; } </style> <table class=\"tableizer-table\"><thead><tr class=\"tableizer-firstrow\"><th>Value</th><th>Units</th><th>Comments</th></tr></thead><tbody>");
                 var s = new StringBuilder("Value,Unit,Comments" + Environment.NewLine);
 
-                foreach (var v in _receivedValues)
+                foreach (var v in ReceivedValues)
                     s.AppendLine($"{v.Millimeters},mm,{v.Comments}");
-                //s.Append("</tbody></table>");
-                //var htmlFormat = HtmlFormatHelper.CreateHtmlFormat(s.ToString());
-                //args.Request.Data.SetHtmlFormat(htmlFormat);
-                //args.Request.Data.SetRtf(rtf)
+
                 args.Request.Data.SetText(s.ToString());
                 args.Request.Data.Properties.Title = "Capture - " + Package.Current.DisplayName;
             }
@@ -93,7 +138,9 @@ namespace eTapeViewer
         private void buttonScan_Click(object sender, RoutedEventArgs e)
         {
             ScanForDevices();
-            ShowMessageBox("Tape scan procedure was triggered. If there was a tape paired and available it should work now. Otherwise check the Instructions option from the menu.\n\nConnection, in most scenarios, is handled automatically but you can invoke a manual check at any time using this option.");
+            ShowMessageBox("Tape scan procedure was triggered. If there is a paired connected tape it should work now.\n\n" +
+                           "Check the Instructions option from the menu for more information about pairing a tape. Unpair and pair again a tape if you still can't get it working.\n\n" +
+                           "Connection, in most scenarios, is handled automatically but you can invoke a manual check at any time using this option.");
         }
 
         private async void ScanForDevices()
@@ -122,7 +169,7 @@ namespace eTapeViewer
             var myTape = await GattDeviceService.FromIdAsync(device.Id);
             myTape.Device.ConnectionStatusChanged += Device_ConnectionStatusChanged;
 
-            if (myTape.Device.ConnectionStatus == Windows.Devices.Bluetooth.BluetoothConnectionStatus.Connected)
+            if (myTape.Device.ConnectionStatus == BluetoothConnectionStatus.Connected)
             {
                 foreach (var s in myTape.Device.GattServices)
                 {
@@ -135,7 +182,7 @@ namespace eTapeViewer
                         if (c.StartsWith("23455107-"))
                         {
                             // Tape configuration
-                            var r = await s2.ReadValueAsync(Windows.Devices.Bluetooth.BluetoothCacheMode.Uncached);
+                            var r = await s2.ReadValueAsync(BluetoothCacheMode.Uncached);
 
                             var b = DataReader.FromBuffer(r.Value);
 
@@ -178,7 +225,7 @@ namespace eTapeViewer
             }
         }
 
-        private void Device_ConnectionStatusChanged(Windows.Devices.Bluetooth.BluetoothLEDevice sender, object args)
+        private void Device_ConnectionStatusChanged(BluetoothLEDevice sender, object args)
         {
             ScanForDevices();
         }
@@ -200,7 +247,7 @@ namespace eTapeViewer
                 () =>
                 {
                     var m = new MeasuredValue(ConvertToMillimeters(bytes));
-                    _receivedValues.Add(m);
+                    ReceivedValues.Add(m);
                     listViewValues.ScrollIntoView(m);
 
                     UpdateGui();
@@ -228,16 +275,9 @@ namespace eTapeViewer
 
             if (await d.ShowAsync() == yes)
             {
-                _receivedValues.Clear();
+                ReceivedValues.Clear();
                 UpdateGui();
             }
-        }
-
-        private void Page_Loaded(object sender, RoutedEventArgs e)
-        {
-            _beep = new MediaElement {AutoPlay = false};
-            _beep.SetPlaybackSource(MediaSource.CreateFromUri(new Uri("ms-appx:///Assets/beep.mp3")));
-            ScanForDevices();
         }
 
         private void toggleButtonBeep_Checked(object sender, RoutedEventArgs e)
@@ -295,13 +335,13 @@ namespace eTapeViewer
 
         private void DeleteItem_Click(object sender, RoutedEventArgs e)
         {
-            _receivedValues.Remove(GetMeasuredValue(e));
+            ReceivedValues.Remove(GetMeasuredValue(e));
             UpdateGui();
         }
 
         private void UpdateGui()
         {
-            var e = _receivedValues.Count > 0;
+            var e = ReceivedValues.Count > 0;
             sendButton.IsEnabled = e;
             clearButton.IsEnabled = e;
             sendButton2.IsEnabled = e;
@@ -342,8 +382,8 @@ namespace eTapeViewer
                 var useMM = ((RadioButton) panel.Children[1]).IsChecked==true || ((RadioButton) panel.Children[2]).IsChecked==true;
                 var appendComments = ((RadioButton)panel.Children[1]).IsChecked == true || ((RadioButton)panel.Children[3]).IsChecked == true;
 
-                foreach (var v in _receivedValues)
-                    s.AppendLine($"{(useMM ? Math.Round(v.Millimeters,2):Math.Round(v.Millimeters/10,1))}{(appendComments&&!string.IsNullOrEmpty(v.Comments)?" ("+v.Comments+")": "")}");
+                foreach (var v in ReceivedValues)
+                    s.AppendLine($"{(useMM ? Math.Round((double) v.Millimeters,2):Math.Round((double) (v.Millimeters/10),1))}{(appendComments&&!String.IsNullOrEmpty(v.Comments)?" ("+v.Comments+")": "")}");
                 
                 var da = new DataPackage();
                 da.SetText(s.ToString());
@@ -360,6 +400,7 @@ namespace eTapeViewer
                 ShowFlyout(e.OriginalSource as FrameworkElement, e.GetPosition(e.OriginalSource as UIElement));
                 Debug.WriteLine("RIGHT TAP FLYOUT");
             }
+            _ignoreFlyout = false;
         }
 
         private void ShowFlyout(FrameworkElement f, Point p)
@@ -387,7 +428,7 @@ namespace eTapeViewer
         private void DeviceInfoButton_Click(object sender, RoutedEventArgs e)
         {
             //ScanForDevices();
-            ShowMessageBox(string.IsNullOrEmpty(_currentConfiguration) ? "No tape connected." : _currentConfiguration);
+            ShowMessageBox(String.IsNullOrEmpty(_currentConfiguration) ? "No tape connected." : _currentConfiguration);
         }
 
         private static async void ShowMessageBox(string s)
@@ -442,9 +483,9 @@ namespace eTapeViewer
                 var t = ((TextBox) ((StackPanel) dialog.Content).Children[0]).Text;
                 var mm = 0;
 
-                if (int.TryParse(t, out mm))
+                if (Int32.TryParse(t, out mm))
                 {
-                    _receivedValues.Add(new MeasuredValue(mm));
+                    ReceivedValues.Add(new MeasuredValue(mm));
                     UpdateGui();
                 }
                 else
