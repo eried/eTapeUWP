@@ -8,17 +8,38 @@
     mc:Ignorable="d">
 
     <Grid Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
-        <FlipView x:Name="flipView">
+        <FlipView x:Name="tutorialFlipView" SelectionChanged="tutorialFlipView_SelectionChanged">
             <Grid>
-                <Image />
-                <TextBlock x:Name="textBlock" HorizontalAlignment="Left" Margin="88,522,0,0" TextWrapping="Wrap" Text="Turn on Bluetooth from Settings" VerticalAlignment="Top"/>
+                <Image Margin="0,100,0,100" Source="Assets/Tutorial/step0.jpg"/>
+                <TextBlock Margin="20,50,20,50" TextWrapping="Wrap" TextAlignment="Center" Text="Turn on Bluetooth from Settings"/>
+                <Button Name="nextStep" Margin="20,50,20,50" VerticalAlignment="Bottom" HorizontalAlignment="Center" Click="buttonNext_Click" ManipulationMode="All">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="Swipe to the next page" Margin="0,0,10,0"/>
+                        <SymbolIcon Symbol="Forward"/>
+                    </StackPanel>
+                </Button>
             </Grid>
             <Grid>
-                <Image />
-                <TextBlock x:Name="textBlock2" HorizontalAlignment="Left" Margin="88,522,0,0" TextWrapping="Wrap" Text="Hold the tape Bluetooth button until the tape is ready to be paired" VerticalAlignment="Top"/>
+                <Image Margin="0,100,0,100" Source="Assets/Tutorial/step1.jpg"/>
+                <TextBlock Margin="20,50,20,50" TextWrapping="Wrap" TextAlignment="Center" Text="Hold the tape's Bluetooth button"/>
             </Grid>
             <Grid>
-                <Button x:Name="button" Content="Start measuring!" Margin="112,432,120,176" HorizontalAlignment="Center" Click="button_Click"/>
+                <Image Margin="0,100,0,100" Source="Assets/Tutorial/step2.jpg"/>
+                <TextBlock Margin="20,50,20,50" TextWrapping="Wrap" TextAlignment="Center" Text="Pair the tape while the tape's Bluetooth icon is flashing"/>
+            </Grid>
+            <Grid>
+                <Image Margin="0,100,0,100" Source="Assets/Tutorial/step3.jpg"/>
+                <TextBlock Margin="20,50,20,50" TextWrapping="Wrap" TextAlignment="Center" Text="Press and release the tape's Bluetooth button to send measurements"/>
+            </Grid>
+            <Grid>
+                <Image Margin="0,100,0,100" Source="Assets/Tutorial/step4.jpg"/>
+                <TextBlock Margin="20,50,20,50" TextWrapping="Wrap" TextAlignment="Center" Text="Tap the received measurements to add comments. Hold or right click each item to get more options"/>
+                <Button Margin="20,50,20,50" VerticalAlignment="Bottom" HorizontalAlignment="Center" Click="button_Click">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="Start measuring!" Margin="0,0,10,0"/>
+                        <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xEB68;"/>
+                    </StackPanel>
+                </Button>
             </Grid>
         </FlipView>
     </Grid>
